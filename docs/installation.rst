@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/mah38900/pinball
+    $ git clone git://github.com/mihoward2718/pinball
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/mah38900/pinball/tarball/master
+    $ curl -OJL https://github.com/mihoward2718/pinball/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/mah38900/pinball
-.. _tarball: https://github.com/mah38900/pinball/tarball/master
+.. _Github repo: https://github.com/mihoward2718/pinball
+.. _tarball: https://github.com/mihoward2718/pinball/tarball/master
