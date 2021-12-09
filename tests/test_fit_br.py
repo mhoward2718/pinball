@@ -1,9 +1,9 @@
-"""Tests for `quantreg` package.
+"""Tests for `pinball` package.
 
 Borrow some tests from
 https://github.com/statsmodels/statsmodels/blob/6b4aa33563ab639d168525dde0ef86c8e5c83d68/statsmodels/regression/tests/test_quantile_regression.py
 """
-from quantreg.br import fit_br
+from pinball.br import fit_br
 import pytest
 import numpy as np
 from unittest import TestCase
@@ -55,7 +55,7 @@ class TestFitBR(TestCase):
 class TestGetWLSWeights(TestCase):
     """Test that WLS weights are correctly estimated"""
     
-    # @patch('quantreg.br.fit_br.fit_br')
+    # @patch('pinball.br.fit_br.fit_br')
     def test_larger_than_eps_equals_weights(self):
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
@@ -64,7 +64,7 @@ class TestGetWLSWeights(TestCase):
         blo = Mock(coef=np.array([1.7,1.8,1.9]))
         bhi = Mock(coef=np.array([19.5,19.6,19.7]))
         
-        with patch('quantreg.br.fit_br.fit_br', side_effect = [bhi, blo]):
+        with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             pass
     
     def test_smaller_than_eps_equals_eps(self):
@@ -84,7 +84,7 @@ class TestGetWLSWeights(TestCase):
         blo = Mock(coef=np.array([0.7,0.8,0.9]))
         bhi = Mock(coef=np.array([0.5,0.6,0.7]))
         
-        with patch('quantreg.br.fit_br.fit_br', side_effect = [bhi, blo]):
+        with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
                 result = fit_br.get_wls_weights(X, y, tau)
                 # Verify result warning was called
@@ -99,7 +99,7 @@ class TestGetWLSWeights(TestCase):
         blo = Mock(coef=np.array([1.7,1.8,1.9]))
         bhi = Mock(coef=np.array([19.5,19.6,19.7]))
         # Maybe not worth thinking too hard how to test this
-        with patch('quantreg.br.fit_br.fit_br', side_effect = [bhi, blo]):
+        with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
                 result = fit_br.get_wls_weights(X, y, tau)
                 # Verify result warning was called
@@ -107,7 +107,7 @@ class TestGetWLSWeights(TestCase):
                           
     def test_compare_with_r_values(self):
         """Run a few test inputs and ensure the result is equal to 
-        what the R quantreg package gives
+        what the R pinball package gives
         
         Good idea to define a few test sets in a 'test_data.py' file or similar
         

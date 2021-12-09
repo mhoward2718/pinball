@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Tests for `quantreg` package.
+"""Tests for `pinball` package.
 """
 import pytest
-from quantreg import quantreg
+from pinball import pinball
 
 @pytest.fixture
 def response():

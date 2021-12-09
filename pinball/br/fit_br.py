@@ -60,8 +60,8 @@ import numpy as np
 from scipy.stats import t, norm
 from statsmodels.regression.linear_model import WLS
 from collections import namedtuple
-from quantreg.util.bandwidth import hall_sheather
-from quantreg_native import rqbr
+from pinball.util.bandwidth import hall_sheather
+from pinball_native import rqbr
 
 BRParams = namedtuple("BRParams",
                         ['m',

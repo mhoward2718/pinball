@@ -7,8 +7,8 @@ import numpy as np
 from scipy.stats import t, norm
 from statsmodels.regression.linear_model import WLS
 from collections import namedtuple
-from quantreg.util.bandwidth import hall_sheather
-from quantreg_native import rqfnb
+from pinball.util.bandwidth import hall_sheather
+from pinball_native import rqfnb
 
 FNBParams = namedtuple("FNBParams",
                        ["n","p","a","y","rhs","d","u","beta","eps","wn","wp","nit","info"])

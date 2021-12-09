@@ -1,1 +1,1 @@
-"""Unit test package for quantreg."""
+"""Unit test package for pinball."""
