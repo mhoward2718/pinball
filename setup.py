@@ -38,22 +38,22 @@ setup(
     description="The fastest and most accurate method to train quantile regression models in Python",
     entry_points={
         'console_scripts': [
-            'quantreg=quantreg.cli:main',
+            'pinball=pinball.cli:main',
         ],
     },
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='quantreg',
-    name='quantreg',
-    packages=find_packages(include=['quantreg', 'quantreg.*']),
+    keywords='pinball',
+    name='pinball',
+    packages=find_packages(include=['pinball', 'pinball.*']),
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/mah38900/quantreg',
+    url='https://github.com/mah38900/pinball',
     version='0.0.1',
     zip_safe=False,
     ext_modules=[
-        Extension(name="quantreg_native", sources=["fortran/rqbr.f"])
+        Extension(name="pinball_native", sources=["fortran/rqbr.f"])
     ]
 )
