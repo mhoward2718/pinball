@@ -1,6 +1,6 @@
 """Tests for `pinball` package.
 
-Borrow some tests from
+TODO: Borrow some tests from
 https://github.com/statsmodels/statsmodels/blob/6b4aa33563ab639d168525dde0ef86c8e5c83d68/statsmodels/regression/tests/test_quantile_regression.py
 """
 from pinball.br import fit_br
@@ -12,24 +12,65 @@ from unittest.mock import Mock
 
 class TestGetQN(TestCase):
     
-    # Mock wls weights.
-    # Mock WLS?
     def test_iid(self):
-        X = np.array([[1,2,3],[4,5,6]])
-        y = np.array([10,100,100])
+        X = np.array([[1,2,3],
+                      [4,5,6],
+                      [10,20,30],
+                      [1,10,100],
+                      [7,5,3]])
+        y = np.array([10,100,1000,5,25])
         tau = 0.5
-        result = fit_br.get_qn(X, y, tau, iid=True)
+        bw = Mock(return_value=1.0)
+        actual_qn = fit_br.get_qn(X, y, tau, iid=True, bandwidth=bw)
+        expected_qn = np.array([ 18.28325628, 37.52621247, 2878.87865655])
+        np.testing.assert_array_almost_equal(actual_qn, expected_qn)
     
     def test_not_iid(self):
-        X = np.array([[1,2,3],[4,5,6]])
-        y = np.array([10,100,100])
+        X = np.array([[1,2,3],
+                      [4,5,6],
+                      [10,20,30],
+                      [1,10,100],
+                      [7,5,3]])
+        y = np.array([10,100,1000,5,25])
         tau = 0.5
+        bw = Mock(return_value=1.0)
+        fit_result1 = Mock(resid=np.array([5.0, 10.0]))
+        fit_result2 = Mock(resid=np.array([2.0, 4.0]))
+        fit_result3 = Mock(resid=np.array([3.0, 7.0]))
+        mock_model = Mock()
+        mock_wls = Mock(return_value=mock_model)
+        mock_model.fit.side_effect = [fit_result1, fit_result2, fit_result3]
+        # Will be called three times
+        #
+        wls_weights = np.array([1.0,1.5,2.0])
+        # This doesn't really test that each call to wls uses all but one of the 
+        # columns though
+        with patch('pinball.br.fit_br.get_wls_weights', return_value=wls_weights):
+            result = fit_br.get_qn(X, y, tau, iid=False, bandwidth=bw, wls=mock_wls)
         
-        fit_result = Mock(resid=np.array([19.5,19.6,19.7]))
-        # How do I mock WLS, then have fit() return fit_result?
-        with patch('statsmodels.regression.linear_model.WLS'):
-            result = fit_br.get_qn(X, y, tau, iid=False)
-    
+        # Each column in result is the sum of the squares of the other columns 
+        # in fit_results
+        expected_result = np.array([25.0+100.0,
+                                    4.0+16.0,
+                                    9.0+49.0])
+        self.assertEqual(X.shape[1], result.shape[0])
+        np.testing.assert_array_equal(result, expected_result)
+        self.assertEqual(mock_wls.call_count, 3)
+        calls = mock_wls.call_args_list
+        expected_calls = [[np.array([[2,3],[5,6],[20,30],[10,100],[5,3]]), np.array([1,4,10,1,7]), wls_weights],
+                          [np.array([[1,3],[4,6],[10,30],[1,100],[7,3]]), np.array([2,5,20,10,5]), wls_weights],
+                          [np.array([[1,2],[4,5],[10,20],[1,10],[7,5]]), np.array([3,6,30,100,3]), wls_weights]
+                         ]
+        for (actual, expected) in zip(calls, expected_calls):
+            # Note that positional and keyword args are stored as elements of a 
+            # tuple. Positional args are call[0], which is a list. The order
+            # of the list is the order of the arguments.
+            # keyword args are call[1], which is a dict of kwarg: value.
+            np.testing.assert_array_equal(actual[0][0], expected[0])
+            np.testing.assert_array_equal(actual[0][1], expected[1])
+            # Keyword arg
+            np.testing.assert_array_equal(actual[1]['weights'], expected[2])
+        
     def test_r_cases(self):
         pass
         
@@ -57,6 +98,7 @@ class TestGetWLSWeights(TestCase):
     
     # @patch('pinball.br.fit_br.fit_br')
     def test_larger_than_eps_equals_weights(self):
+        # TODO: Fix number of rows
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
         tau = 0.5
@@ -76,21 +118,18 @@ class TestGetWLSWeights(TestCase):
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
         tau = 0.5
-        # Choose return values that result in 2*h blah blah getting returned
         blo = np.array([0.7,0.8,0.9])
         bhi = np.array([0.5,0.6,0.7])
-        # Possibly patch bandwidth also
-        # Not really a unittest otherwise
-        blo = Mock(coef=np.array([0.7,0.8,0.9]))
-        bhi = Mock(coef=np.array([0.5,0.6,0.7]))
-        
+        blo = Mock(coef=np.array([0.7,0.6,0.7]))
+        bhi = Mock(coef=np.array([0.5,0.6,0.8]))
+        bw = Mock(return_value=1)
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
-                result = fit_br.get_wls_weights(X, y, tau)
+                result = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
                 # Verify result warning was called
-                print.assert_called_with("Percent fis <= 0: 20.0")
+                print.assert_called_with("Percent fis <= 0: 50.0")
 
-    # What is 'percent fis' anyway?
+    # What is the meaning of FIS? Is it referencing some f_i in a paper?
     def test_dyhat_no_print_warning(self):
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
@@ -98,10 +137,11 @@ class TestGetWLSWeights(TestCase):
         # Choose return values that result in 2*h blah blah getting returned
         blo = Mock(coef=np.array([1.7,1.8,1.9]))
         bhi = Mock(coef=np.array([19.5,19.6,19.7]))
+        bw = Mock(return_value=1)
         # Maybe not worth thinking too hard how to test this
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
-                result = fit_br.get_wls_weights(X, y, tau)
+                result = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
                 # Verify result warning was called
                 self.assertFalse(print.called)
                           
@@ -120,16 +160,18 @@ class TestDeriveBRParams(TestCase):
     # TODO: Probably should implement checks on the types, shapes, etc of input arguments
     # then create unit tests for those checks
     
-    # TODO: 3x3 is probably too trivial
-    # Try testing a case where number of columns and rows are different
     def test_single_quantile(self):
-        X = np.array([[1,2,3],[4,5,6],[7,8,9]]) # 3x3 array
-        y = np.array([[50.,70.,90.]])
+        X = np.array([[1,2,3],
+                      [4,5,6],
+                      [10,20,30],
+                      [1,10,100],
+                      [7,5,3]])
+        y = np.array([10,100,1000,5,25])
         tau = 0.90
         actual_params = fit_br.derive_br_params(X, y, tau)
-        expected_params = fit_br.BRParams(m=3,
+        expected_params = fit_br.BRParams(m=5,
                 nn=np.int32(3),
-                m5=np.int32(3 + 5), 
+                m5=np.int32(5 + 5), 
                 n3=np.int32(3 + 3),
                 n4=np.int32(3 + 4),
                 a=X,
@@ -138,14 +180,14 @@ class TestDeriveBRParams(TestCase):
                 toler=np.finfo(np.float64).eps ** (2/3),
                 ift=np.int32(1), 
                 x=np.zeros(3, np.float64),
-                e=np.zeros(3, np.float64),
-                s=np.zeros(3,dtype=np.int32),
-                wa=np.zeros(((3 + 5),(3 + 4)), dtype=np.float64),
-                wb=np.zeros(3, dtype=np.float32),
+                e=np.zeros(5, np.float64),
+                s=np.zeros(5,dtype=np.int32),
+                wa=np.zeros(((5 + 5),(3 + 4)), dtype=np.float64),
+                wb=np.zeros(5, dtype=np.float32),
                 nsol=np.int32(2),
                 ndsol=np.int32(2),
                 sol=np.zeros(((3 + 3), 2), dtype=np.float64),
-                dsol=np.zeros((3, 2), dtype=np.float64),
+                dsol=np.zeros((5, 2), dtype=np.float64),
                 lsol=np.int32(0),
                 h=np.zeros((3,2), dtype=np.int32),
                 qn=np.zeros(3, dtype=np.float64),
@@ -155,8 +197,8 @@ class TestDeriveBRParams(TestCase):
                 big=np.finfo(np.float64).max,
                 lci1=np.bool_(False))
         
-        # It looks like because these tuples contain arrays, we can't assert equality of 
-        # the whole tuple in a single comparison
+        # These tuples contain arrays so we can't assert equality of 
+        # in a single comparison
         
         self.assertTrue(actual_params.m == expected_params.m)
         self.assertTrue(actual_params.nn == expected_params.nn)
@@ -187,13 +229,17 @@ class TestDeriveBRParams(TestCase):
         self.assertTrue(actual_params.lci1 == expected_params.lci1)
         
     def test_all_quantiles(self):
-        X = np.array([[1,2,3],[4,5,6],[7,8,9]]) # 3x3 array
-        y = np.array([[50.,70.,90.]])
+        X = np.array([[1,2,3],
+                      [4,5,6],
+                      [10,20,30],
+                      [1,10,100],
+                      [7,5,3]])
+        y = np.array([10,100,1000,5,25])
         tau = None
         actual_params = fit_br.derive_br_params(X, y, tau)
-        expected_params = fit_br.BRParams(m=3,
+        expected_params = fit_br.BRParams(m=5,
                 nn=np.int32(3),
-                m5=np.int32(3 + 5), 
+                m5=np.int32(5 + 5), 
                 n3=np.int32(3 + 3),
                 n4=np.int32(3 + 4),
                 a=X,
@@ -202,16 +248,16 @@ class TestDeriveBRParams(TestCase):
                 toler=np.finfo(np.float64).eps ** (2/3),
                 ift=np.int32(1), 
                 x=np.zeros(3, np.float64),
-                e=np.zeros(3, np.float64),
-                s=np.zeros(3,dtype=np.int32),
-                wa=np.zeros(((3 + 5),(3 + 4)), dtype=np.float64),
-                wb=np.zeros(3, dtype=np.float32),
-                nsol=np.int32(9),
-                ndsol=np.int32(9),
-                sol=np.zeros(((3 + 3), 9), dtype=np.float64),
-                dsol=np.zeros((3, 9), dtype=np.float64),
+                e=np.zeros(5, np.float64),
+                s=np.zeros(5, dtype=np.int32),
+                wa=np.zeros(((5 + 5),(3 + 4)), dtype=np.float64),
+                wb=np.zeros(5, dtype=np.float32),
+                nsol=np.int32(15),
+                ndsol=np.int32(15),
+                sol=np.zeros(((3 + 3), 15), dtype=np.float64),
+                dsol=np.zeros((5, 15), dtype=np.float64),
                 lsol=np.int32(0),
-                h=np.zeros((3,9), dtype=np.int32),
+                h=np.zeros((3,15), dtype=np.int32),
                 qn=np.zeros(3, dtype=np.float64),
                 cutoff=np.float64(0), 
                 ci=np.zeros((4,3), dtype=np.float64),
