@@ -1,4 +1,4 @@
-Welcome to quantreg's documentation!
+Welcome to pinball's documentation!
 ======================================
 
 .. toctree::

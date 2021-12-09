@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use quantreg in a project::
+To use pinball in a project::
 
-    import quantreg
+    import pinball
