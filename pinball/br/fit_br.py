@@ -172,14 +172,15 @@ def get_qn(X: np.array,
            y: np.array,
            tau: float,
            iid: bool,
-           bandwidth: Callable) -> np.array:
+           bandwidth: Callable = hall_sheather,
+           wls: Callable = WLS) -> np.array:
     (m, nn) = X.shape
     qn = np.zeros(nn)
     if not iid:
         weights = get_wls_weights(X, y, tau, m, bandwidth)
         for j in range(0, nn):
             x1 = np.delete(X,j,axis=1)
-            qnj = WLS(X[:, j], x1, weights = weights).fit().resid
+            qnj = wls(x1, X[:, j], weights = weights).fit().resid
             qn[j] = np.sum(qnj * qnj)
     else: # Get QN for IID case
         X_cross = np.matmul(X.T, X)
@@ -200,7 +201,7 @@ def fit_br(X: np.array,
     """
     
     if np.linalg.cond(X) >= 1/(np.finfo(X.dtype).eps):
-        raise ValueError('Singular design matrix') 
+        raise ValueError("Singular design matrix") 
         
     br_params = derive_br_params(X, y, tau)
 

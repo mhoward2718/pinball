@@ -75,9 +75,43 @@ class TestGetQN(TestCase):
         pass
         
 class TestFitBR(TestCase):
-    # Will need to mock rqbr
-    def test_ci(self):
-        pass
+    """Will need to mock rqbr"""
+    
+    def test_matrix_condition_error(self):
+        X = np.array([[1,1,3],
+              [4,4,6],
+              [10,10,30],
+              [1,1,100],
+              [7,7,3]], dtype=np.float64)
+        y = np.array([10,100,1000,5,25])
+        tau = 0.5
+
+        with pytest.raises(Exception) as execinfo:   
+            fit_br.fit_br(X, y, tau)
+        self.assertEqual(execinfo.value.args[0], "Singular design matrix")
+        
+    """
+    This is easy but I want a cleaner way to mock multiple classes and functions
+    Opening each within a context(?) manager gets ugly because of the indents and 
+    repeated scopes
+    
+    """
+    @patch('pinball.br.fit_br.derive_br_params')
+    @patch('pinball_native.rqbr')
+    @patch('pinball.br.fit_br.get_qn')
+    def test_ci(self, mock_derive_params, mock_rqbr, mock_get_qn):
+        X = np.array([[1,2,3],
+                      [4,5,6],
+                      [10,20,30],
+                      [1,10,100],
+                      [7,5,3]], dtype=np.float64)
+        y = np.array([10,100,1000,5,25])
+        tau = 0.5
+        params = Mock()
+        params.nn = 5
+        mock_rqbr()
+        mock_derive_params.return_value = params
+        fit_br.fit_br(X, y, tau, ci = True)
     
     def test_single_predictor(self):
         pass
@@ -92,6 +126,10 @@ class TestFitBR(TestCase):
         pass
     
     # TODO: Define tests that actually run fortran and verify result
+    
+    
+    
+    
 
 class TestGetWLSWeights(TestCase):
     """Test that WLS weights are correctly estimated"""
