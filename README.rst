@@ -16,7 +16,7 @@ Pinball
 
 
 
-[Work in progress] The fastest and most accurate method to train quantile regression models in Python.
+The fastest and most accurate method to train quantile regression models in Python. [Work in progress] 
 
 
 
