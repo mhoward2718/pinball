@@ -95,25 +95,35 @@ class TestFitBR(TestCase):
 
 class TestGetWLSWeights(TestCase):
     """Test that WLS weights are correctly estimated"""
-    
-    # @patch('pinball.br.fit_br.fit_br')
+
     def test_larger_than_eps_equals_weights(self):
-        # TODO: Fix number of rows
-        X = np.array([[1,2,3],[4,5,6]])
+        X = np.array([[1,2,3], [4,5,6]])
         y = np.array([10,100,100])
         tau = 0.5
-        # Choose return values that result in 2*h blah blah getting returned
-        blo = Mock(coef=np.array([1.7,1.8,1.9]))
-        bhi = Mock(coef=np.array([19.5,19.6,19.7]))
+        blo = Mock(coef=np.array([1.7, 1.8, 1.9]))
+        bhi = Mock(coef=np.array([19.5, 19.6, 19.7]))
+        bw = Mock(return_value=1)
         
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
-            pass
+            actual = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+        
+        expected = np.array([0.01872659, 0.00749064])
+        np.testing.assert_array_almost_equal(actual, expected)
     
     def test_smaller_than_eps_equals_eps(self):
-        # Choose return values that result in eps being returned
-        pass
+        X = np.array([[1,2,3], [4,5,6]])
+        y = np.array([10,100,100])
+        tau = 0.5
+        blo = Mock(coef=np.array([1.7, 1.8, 1.9]))
+        bhi = Mock(coef=np.array([19.5, 19.6, 19.7]))
+        bw = Mock(return_value=.0000000001)
+
+        with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
+            actual = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+        eps = np.finfo(np.float64).eps ** (2/3)
+        expected = np.array([eps, eps])
+        np.testing.assert_array_almost_equal(actual, expected)
     
-    # What is 'percent fis' anyway?
     def test_dyhat_print_warning(self):
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
@@ -134,11 +144,9 @@ class TestGetWLSWeights(TestCase):
         X = np.array([[1,2,3],[4,5,6]])
         y = np.array([10,100,100])
         tau = 0.5
-        # Choose return values that result in 2*h blah blah getting returned
         blo = Mock(coef=np.array([1.7,1.8,1.9]))
         bhi = Mock(coef=np.array([19.5,19.6,19.7]))
         bw = Mock(return_value=1)
-        # Maybe not worth thinking too hard how to test this
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
                 result = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
