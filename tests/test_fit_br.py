@@ -21,7 +21,7 @@ class TestGetRankInversionIntervals(TestCase):
         y = np.array([10,100,1000,5,25])
         tau = 0.5
         bw = Mock(return_value=1.0)
-        actual_qn = fit_br.get_rank_inversion_intervals(X, y, tau, iid=True, bandwidth=bw)
+        actual_qn = fit_br.get_rank_inversion_intervals(X, y, tau, iid=True, bandwidth_method=bw)
         expected_qn = np.array([ 18.28325628, 37.52621247, 2878.87865655])
         np.testing.assert_array_almost_equal(actual_qn, expected_qn)
 
@@ -46,7 +46,7 @@ class TestGetRankInversionIntervals(TestCase):
         # This doesn't really test that each call to wls uses all but one of the
         # columns though
         with patch('pinball.br.fit_br.get_wls_weights', return_value=wls_weights):
-            result = fit_br.get_rank_inversion_intervals(X, y, tau, iid=False, bandwidth=bw, wls=mock_wls)
+            result = fit_br.get_rank_inversion_intervals(X, y, tau, iid=False, bandwidth_method=bw, wls_method=mock_wls)
 
         # Each column in result is the sum of the squares of the other columns
         # in fit_results
@@ -98,8 +98,8 @@ class TestFitBR(TestCase):
     """
     @patch('pinball.br.fit_br.derive_br_params')
     @patch('pinball_native.rqbr')
-    @patch('pinball.br.fit_br.get_qn')
-    def test_ci(self, mock_derive_params, mock_rqbr, mock_get_qn):
+    @patch('pinball.br.fit_br.get_rank_inversion_intervals')
+    def test_ci(self, mock_derive_params, mock_rqbr, mock_get_rank_inversion_intervals):
         X = np.array([[1,2,3],
                       [4,5,6],
                       [10,20,30],
@@ -109,6 +109,7 @@ class TestFitBR(TestCase):
         tau = 0.5
         params = Mock()
         params.nn = 5
+        params.a = 3
         mock_rqbr()
         mock_derive_params.return_value = params
         fit_br.fit_br(X, y, tau, ci = True)
@@ -143,7 +144,7 @@ class TestGetWLSWeights(TestCase):
         bw = Mock(return_value=1)
 
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
-            actual = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+            actual = fit_br.get_wls_weights(X, y, tau, bandwidth_method=bw)
 
         expected = np.array([0.01872659, 0.00749064])
         np.testing.assert_array_almost_equal(actual, expected)
@@ -157,7 +158,7 @@ class TestGetWLSWeights(TestCase):
         bw = Mock(return_value=.0000000001)
 
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
-            actual = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+            actual = fit_br.get_wls_weights(X, y, tau, bandwidth_method=bw)
         eps = np.finfo(np.float64).eps ** (2/3)
         expected = np.array([eps, eps])
         np.testing.assert_array_almost_equal(actual, expected)
@@ -173,7 +174,7 @@ class TestGetWLSWeights(TestCase):
         bw = Mock(return_value=1)
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
-                result = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+                result = fit_br.get_wls_weights(X, y, tau, bandwidth_method=bw)
                 # Verify result warning was called
                 print.assert_called_with("Percent fis <= 0: 50.0")
 
@@ -187,7 +188,7 @@ class TestGetWLSWeights(TestCase):
         bw = Mock(return_value=1)
         with patch('pinball.br.fit_br.fit_br', side_effect = [bhi, blo]):
             with patch('builtins.print'):
-                result = fit_br.get_wls_weights(X, y, tau, bandwidth=bw)
+                result = fit_br.get_wls_weights(X, y, tau, bandwidth_method=bw)
                 # Verify result warning was called
                 self.assertFalse(print.called)
 
